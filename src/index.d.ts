@@ -16,14 +16,22 @@ declare module 'react-native-apple-payment' {
   }
 
   export interface DetailsData {
+    items?: Detail[];
     total: Detail;
   }
 
-  export type TransactionIdentifier = string;
+  export type ApplePayResponse = {
+    paymentData: string;
+    paymentMethod: {
+      displayName: string;
+      network: string;
+      type: string;
+    };
+  };
 
   export default class ApplePay {
     constructor(method: MethodData, details: DetailsData);
-    initApplePay(): Promise<TransactionIdentifier>;
+    initApplePay(): Promise<ApplePayResponse>;
     canMakePayments(): Promise<boolean>;
   }
 }

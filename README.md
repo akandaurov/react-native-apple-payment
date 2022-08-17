@@ -39,23 +39,31 @@ export interface Detail {
 }
 
 export interface DetailsData {
+    items?: Detail[];
     total: Detail;
 }
 
-export type TransactionIdentifier = string;
+export type ApplePayResponse = {
+    paymentData: string;
+    paymentMethod: {
+        displayName: string;
+        network: string;
+        type: string;
+    };
+};
 
 ```
 
 ### Code
 ```ts
 
-import ApplePay, { MethodData, DetailsData } from "react-native-apple-payment";
+import ApplePay, { MethodData, DetailsData, ApplePayResponse } from "react-native-apple-payment";
 
 const payment = new ApplePay(method as MethodData, details as DetailsData);
 
 const canMakePayment: boolean = await payment.canMakePayments()
 
-const paymentResponse: TransactionIdentifier = await payment.initApplePay()
+const paymentResponse: ApplePayResponse = await payment.initApplePay()
 
 ```
 

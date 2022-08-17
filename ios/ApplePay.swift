@@ -15,14 +15,24 @@ class ApplePay: UIViewController {
             print("Can not make payment")
             return
         }
+
+        let items = details["items"] != nil ? details["items"] as! NSArray : []
         let total = details["total"] as! NSDictionary
-        let paymentItem = PKPaymentSummaryItem.init(label: total["label"] as! String, amount: NSDecimalNumber(value: total["amount"] as! Double))
+
+        request.paymentSummaryItems = [];
+
+        for item in items {
+          let itemObject = item as! NSDictionary
+          request.paymentSummaryItems.append(PKPaymentSummaryItem.init(label: itemObject["label"] as! String, amount: NSDecimalNumber(value: itemObject["amount"] as! Double)))
+        }
+
+        request.paymentSummaryItems.append(PKPaymentSummaryItem.init(label: total["label"] as! String, amount: NSDecimalNumber(value: total["amount"] as! Double)))
+
         request.currencyCode = method["currencyCode"] as! String
         request.countryCode = method["countryCode"] as! String
         request.merchantIdentifier = method["merchantIdentifier"] as! String
         request.merchantCapabilities = PKMerchantCapability.capability3DS
         request.supportedNetworks = self.paymentNetworks!
-        request.paymentSummaryItems = [paymentItem]
     }
 
     @objc(initApplePay:withRejecter:)
@@ -39,7 +49,7 @@ class ApplePay: UIViewController {
             }
         }
     }
-    
+
     @objc(canMakePayments:withRejecter:)
     func canMakePayments(resolve: RCTPromiseResolveBlock,reject:RCTPromiseRejectBlock) -> Void {
         if PKPaymentAuthorizationViewController.canMakePayments(usingNetworks: paymentNetworks!) {
@@ -56,13 +66,36 @@ extension ApplePay: PKPaymentAuthorizationViewControllerDelegate {
     }
 
     func paymentAuthorizationViewController(_ controller: PKPaymentAuthorizationViewController, didAuthorizePayment payment: PKPayment, completion: @escaping (PKPaymentAuthorizationStatus) -> Void) {
-        let token = String(decoding: payment.token.paymentData, as: UTF8.self)
-        if token != nil {
-            self.resolve!(token)
-            completion(.success)
-        } else {
-            self.resolve!("COULD_NOT_FIND_TOKEN")
-            completion(.failure)
+        let paymentData = String(decoding: payment.token.paymentData, as: UTF8.self)
+        let paymentMethod: NSDictionary = [
+            "displayName": payment.token.paymentMethod.displayName,
+            "network": payment.token.paymentMethod.network,
+            "type": methodTypeToString(type: payment.token.paymentMethod.type)
+        ]
+
+        let result: NSDictionary = [
+            "paymentData": paymentData,
+            "paymentMethod": paymentMethod
+        ]
+
+        self.resolve!(result)
+        completion(.success)
+    }
+
+    private func methodTypeToString(type: PKPaymentMethodType) -> String {
+        switch (type) {
+            case .credit:
+                return "credit"
+            case .debit:
+                return "debit"
+            case .eMoney:
+                return "eMoney"
+            case .prepaid:
+                return "prepaid"
+            case .store:
+                return "store"
+            default:
+                return "unknown"
         }
     }
 }
